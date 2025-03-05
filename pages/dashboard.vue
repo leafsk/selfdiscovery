@@ -18,7 +18,7 @@
         </div>
       </div>
 
-      <UTabs :items="tabs" class="mt-8">
+      <UTabs :items="tabs" v-model="activeTab" class="mt-8">
         <template #item="{ item }">
           <div v-if="item.key === 'document'" class="document-tab">
             <DocumentViewer />
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { ref, computed, provide } from "vue";
 
 definePageMeta({
   auth: {
@@ -48,6 +48,8 @@ const userName = computed(() => {
   return session.value?.user?.name || "User";
 });
 
+const activeTab = ref(0); // Default to the first tab (document)
+
 const tabs = [
   {
     key: "document",
@@ -60,6 +62,9 @@ const tabs = [
     icon: "i-heroicons-chat-bubble-left-right",
   },
 ];
+
+// Provide the active tab to child components
+provide('tabs', activeTab);
 
 const userMenuItems = [
   [

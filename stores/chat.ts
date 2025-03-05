@@ -4,7 +4,7 @@ import { useDocumentStore } from './document';
 interface Message {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system' | 'notification';
   timestamp: string;
 }
 
@@ -40,9 +40,11 @@ export const useChatStore = defineStore('chat', {
       });
     },
     
-    async sendMessage(content: string) {
-      // Add the user message to the chat
-      this.addUserMessage(content);
+    async sendMessage(content: string, addUserMessage = true) {
+      // Add the user message to the chat only if requested
+      if (addUserMessage) {
+        this.addUserMessage(content);
+      }
       this.isLoading = true;
       this.error = null;
       
@@ -147,14 +149,30 @@ export const useChatStore = defineStore('chat', {
                   }
                   
                   if (updateData) {
-                    const { chapter, content } = updateData;
+                    const { chapter, content, significantUpdate } = updateData;
                     
                     if (chapter && content) {
-                      console.log('Updating document chapter:', chapter);
-                      console.log('With content:', content.substring(0, 50) + '...');
+                      console.log('Potential document update for chapter:', chapter);
                       
-                      // Update the document with the AI's suggestions
-                      documentStore.updateChapter(chapter, content);
+                      // Only update if it's marked as significant or has substantially more content
+                      const existingContent = documentStore.content[chapter] || '';
+                      const contentDifference = content.length - existingContent.length;
+                      const isSignificantChange = significantUpdate === true || 
+                                                 contentDifference > 50;
+                      
+                      if (isSignificantChange) {
+                        console.log('Updating document - significant change detected');
+                        console.log('Content difference:', contentDifference);
+                        
+                        // Update the document with the AI's suggestions
+                        documentStore.updateChapter(chapter, content);
+                        
+                        // Add a notification message about the update
+                        const updateNotification = `*Your "${chapter}" chapter has been updated with new insights from this conversation.*`;
+                        this.addSystemNotification(updateNotification);
+                      } else {
+                        console.log('Skipping document update - not a significant change');
+                      }
                     } else {
                       console.warn('Missing chapter or content in extracted update data');
                     }
@@ -181,6 +199,32 @@ export const useChatStore = defineStore('chat', {
     
     clearMessages() {
       this.messages = [];
+    },
+    
+    sendSystemMessage(content: string) {
+      // System messages are not displayed to the user but are included in the API call
+      this.messages.push({
+        id: crypto.randomUUID(),
+        content,
+        role: 'system',
+        timestamp: new Date().toISOString()
+      });
+    },
+    
+    sendAssistantMessage(content: string) {
+      // Directly add an assistant message without making an API call
+      this.addAssistantMessage(content);
+    },
+    
+    addSystemNotification(content: string) {
+      // Add a notification message that will be visible to the user
+      // but styled differently from normal messages
+      this.messages.push({
+        id: crypto.randomUUID(),
+        content,
+        role: 'notification',
+        timestamp: new Date().toISOString()
+      });
     }
   }
 });

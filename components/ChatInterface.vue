@@ -16,8 +16,8 @@
     <div class="chat-messages" ref="messagesContainer">
       <template v-if="messages.length === 0">
         <div class="chat-welcome">
-          <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200">Start a conversation</h2>
-          <p class="text-gray-600 dark:text-gray-400 mt-2">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Start a conversation</h2>
+          <p class="text-gray-700 dark:text-gray-100 mt-2">
             Start a guided conversation to build your personal mission statement. Select a topic to explore:
           </p>
           <div class="conversation-starters mt-4 space-y-2">
@@ -37,10 +37,14 @@
       
       <template v-else>
         <div 
-          v-for="message in messages" 
+          v-for="message in messages.filter(m => m.role !== 'system')" 
           :key="message.id" 
           class="chat-message" 
-          :class="message.role === 'user' ? 'user-message' : 'assistant-message'"
+          :class="{
+            'user-message': message.role === 'user',
+            'assistant-message': message.role === 'assistant',
+            'notification-message': message.role === 'notification'
+          }"
         >
           <div class="message-content">
             <!-- Use plain text for user messages -->
@@ -49,9 +53,16 @@
             </template>
             
             <!-- Use formatted markdown for assistant messages -->
-            <div v-else v-html="renderMarkdown(message.content)" class="assistant-markdown prose dark:prose-invert"></div>
+            <div v-else-if="message.role === 'assistant'" 
+              v-html="renderMarkdown(message.content)" 
+              class="assistant-markdown prose dark:prose-invert"></div>
+            
+            <!-- Special styling for notification messages -->
+            <div v-else-if="message.role === 'notification'"
+              v-html="renderMarkdown(message.content)"
+              class="notification-content prose dark:prose-invert"></div>
           </div>
-          <div class="message-timestamp text-xs text-gray-500">
+          <div v-if="message.role !== 'notification'" class="message-timestamp text-xs text-gray-500">
             {{ formatTime(message.timestamp) }}
           </div>
         </div>
@@ -60,6 +71,16 @@
       <div v-if="isLoading" class="loading-indicator">
         <UIcon name="i-heroicons-ellipsis-horizontal-circle" class="text-gray-400 animate-pulse" />
         <span class="ml-2 text-sm text-gray-500">Thinking...</span>
+      </div>
+      
+      <!-- Show typing indicator message if loading and there's at least one message -->
+      <div v-if="isLoading && messages.filter(m => m.role !== 'system').length > 0" 
+        class="chat-message assistant-message typing-message">
+        <div class="typing-animation">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
       </div>
     </div>
     
@@ -97,11 +118,11 @@ const newMessage = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
 
 const conversationStarters = [
-  "Let's explore my core values",
-  "Help me define my life purpose",
-  "I'd like to discuss my future goals",
-  "Let's talk about my strengths and talents",
-  "I want to reflect on my relationships"
+  "What core values would I want to be remembered for?",
+  "How might my unique experiences shape my life purpose?",
+  "If I had unlimited resources, what would I create in the world?",
+  "Which of my strengths have I not fully developed yet?",
+  "How do my relationships reflect who I truly am?"
 ];
 
 const chatMenuItems = [
@@ -167,8 +188,15 @@ const markdownToHtmlEditor = new Editor({
 function renderMarkdown(text: string) {
   if (!text) return '';
   
-  // Set the markdown content to the editor
-  markdownToHtmlEditor.commands.setContent(text);
+  // Remove JSON-like code blocks that might contain metadata
+  const cleanedText = text.replace(/```(?:json)?\s*\{[\s\S]*?\}\s*```/g, '<em>[JSON data hidden]</em>')
+                          .replace(/```(?:json)?\s*\[[\s\S]*?\]\s*```/g, '<em>[JSON data hidden]</em>')
+                          // Replace inline JSON with indicators
+                          .replace(/`\{[\s\S]*?\}`/g, '<em>[JSON data hidden]</em>')
+                          .replace(/`\[[\s\S]*?\]`/g, '<em>[JSON data hidden]</em>');
+  
+  // Set the markdown content to the editor with JSON code blocks removed
+  markdownToHtmlEditor.commands.setContent(cleanedText);
   
   // Return the editor's HTML content
   return markdownToHtmlEditor.getHTML();
@@ -221,6 +249,11 @@ onMounted(() => {
   @apply bg-gray-100 text-gray-900 mr-auto dark:bg-gray-800 dark:text-gray-100;
 }
 
+.notification-message {
+  @apply bg-blue-50 text-blue-900 w-full max-w-full text-center mx-auto py-2 px-3 
+         dark:bg-blue-900/30 dark:text-blue-200 border border-blue-100 dark:border-blue-800;
+}
+
 .message-content {
   @apply whitespace-pre-wrap;
 }
@@ -270,12 +303,19 @@ onMounted(() => {
 }
 
 /* Remove margins from first and last elements */
-.assistant-message .assistant-markdown > *:first-child {
+.assistant-message .assistant-markdown > *:first-child,
+.notification-message .notification-content > *:first-child {
   @apply mt-0;
 }
 
-.assistant-message .assistant-markdown > *:last-child {
+.assistant-message .assistant-markdown > *:last-child,
+.notification-message .notification-content > *:last-child {
   @apply mb-0;
+}
+
+/* Notification content styling */
+.notification-content {
+  @apply text-sm font-medium;
 }
 
 /* Style code blocks */
@@ -302,10 +342,30 @@ onMounted(() => {
 }
 
 .chat-welcome {
-  @apply p-6 bg-gray-50 rounded-lg;
+  @apply p-6 bg-gray-50 dark:bg-gray-800 rounded-lg;
 }
 
 .loading-indicator {
   @apply flex items-center p-2;
+}
+
+.typing-message {
+  @apply py-4 px-5;
+}
+
+.typing-animation {
+  @apply flex space-x-1;
+}
+
+.typing-animation span {
+  @apply bg-gray-400 dark:bg-gray-300 rounded-full h-2 w-2 animate-bounce;
+}
+
+.typing-animation span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-animation span:nth-child(3) {
+  animation-delay: 0.4s;
 }
 </style>
