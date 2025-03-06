@@ -1,38 +1,10 @@
-# Cloudflare wrangler configuration file
-
+# Simple Cloudflare Pages configuration
 name = "selfdiscovery"
 compatibility_date = "2023-10-02"
-compatibility_flags = ["nodejs_compat"]
-workers_dev = true
-
-# Bind the D1 database
-[[d1_databases]]
-binding = "DB"
-database_name = "selfdiscovery"
-database_id = "7dcf2377-8198-4f7f-ba51-614134c8be98"
-
-[site]
-bucket = ".output/public"
-
-[build]
-command = "npm run build"
-
-# Define the build output directory for Pages
-[build.upload]
-format = "directory"
-
-# This is the property required by Cloudflare Pages
 pages_build_output_dir = ".output/public"
 
-# Production environment configuration
-[env.production]
-name = "selfdiscovery"
-routes = [
-  { pattern = "/*", script = "index.js" }
-]
-
-# Production D1 database binding
-[env.production.d1_databases]
+# D1 database binding
+[[d1_databases]]
 binding = "DB"
 database_name = "selfdiscovery"
 database_id = "7dcf2377-8198-4f7f-ba51-614134c8be98"

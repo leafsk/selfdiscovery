@@ -8,8 +8,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "deploy": "nuxt build && wrangler pages deploy .output/public --project-name=selfdiscovery --branch=main",
-    "dev:cf": "wrangler pages dev .output/public"
+    "deploy": "nuxt build && npx wrangler pages deploy .output/public --project-name=selfdiscovery",
+    "dev:cf": "npx wrangler pages dev --build-dir=.output/public --binding DB=selfdiscovery"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

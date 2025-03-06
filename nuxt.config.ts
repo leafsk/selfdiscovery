@@ -35,10 +35,16 @@ export default defineNuxtConfig({
   nitro: {
     preset: 'cloudflare-pages',
     compressPublicAssets: true,
+    output: {
+      dir: '.output',
+      publicDir: '.output/public'
+    },
     // Important for making D1 database binding work
     cloudflare: {
-      routes: {
-        include: ['/**']
+      pages: {
+        routes: {
+          include: ['/**']
+        }
       }
     }
   }

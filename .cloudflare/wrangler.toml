@@ -1,0 +1,20 @@
+# Cloudflare Pages specific configuration
+name = "selfdiscovery"
+compatibility_date = "2023-10-02"
+compatibility_flags = ["nodejs_compat"]
+
+# Build configuration
+build.command = "npm run build"
+build.upload.format = "directory"
+build.output_directory = ".output/public"
+
+# Routes configuration
+routes = [
+  { pattern = "/*", script = "index.js" }
+]
+
+# D1 database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "selfdiscovery"
+database_id = "7dcf2377-8198-4f7f-ba51-614134c8be98"

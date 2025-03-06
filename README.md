@@ -57,6 +57,48 @@ npm run dev
 4. View your evolving mission statement in the Document tab
 5. Edit any section manually if needed
 
+## Deployment to Cloudflare Pages
+
+This application is configured to deploy to Cloudflare Pages with D1 database integration.
+
+### Prerequisites
+
+1. A Cloudflare account
+2. Wrangler CLI installed: `npm install -g wrangler`
+3. D1 database already created
+
+### Deployment Steps
+
+1. Set up the database schema:
+   ```bash
+   wrangler d1 execute selfdiscovery --file=schema.sql
+   ```
+
+2. Build and deploy:
+   ```bash
+   npm run build
+   npx wrangler pages deploy .output/public --project-name=selfdiscovery
+   ```
+
+3. Configure environment variables in the Cloudflare Pages dashboard:
+   - `ANTHROPIC_API_KEY`: Your Anthropic API key
+   - `NEXTAUTH_SECRET`: A random string for session encryption
+   - `NEXTAUTH_URL`: https://selfdiscovery.pages.dev
+
+4. Bind the D1 database to your Cloudflare Pages deployment:
+   ```bash
+   # Replace DEPLOYMENT_ID with your actual deployment ID from the Pages dashboard
+   npx wrangler pages deployment environment-variable set DEPLOYMENT_ID DB d1:selfdiscovery
+   ```
+
+### Cloudflare Local Development
+
+Run the Cloudflare Pages development server:
+```bash
+npm run build
+npm run dev:cf
+```
+
 ## License
 
 MIT
@@ -65,3 +107,4 @@ MIT
 
 - [Anthropic](https://www.anthropic.com/) for Claude AI
 - [Nuxt](https://nuxt.com/) team for the fantastic framework
+- [Cloudflare](https://www.cloudflare.com/) for Pages and D1 database
