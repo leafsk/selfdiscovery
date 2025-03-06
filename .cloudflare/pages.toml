@@ -1,0 +1,12 @@
+# Cloudflare Pages configuration file
+
+# Build configuration
+[build]
+  # The directory to publish to the bucket
+  output_directory = ".output/public"
+  # Command to run before building
+  command = "npm run build"
+
+# Environment variables
+[env.production]
+  NODE_VERSION = "18"
