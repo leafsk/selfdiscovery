@@ -1,7 +1,12 @@
 import { getServerSession } from '#auth';
-import { documentOperations } from '~/server/utils/db';
+import { documentOperations, setD1Database } from '~/server/utils/db';
 
 export default defineEventHandler(async (event) => {
+  // For Cloudflare D1 binding
+  if (event.context.cloudflare?.env?.DB) {
+    setD1Database(event.context.cloudflare.env.DB);
+  }
+
   const session = await getServerSession(event);
   if (!session) {
     throw createError({
@@ -22,7 +27,7 @@ export default defineEventHandler(async (event) => {
   const userId = session.user.id;
   
   // Get the current document
-  const existingDoc = documentOperations.getByUserId.get(userId);
+  const existingDoc = await documentOperations.getByUserId.get(userId);
   
   if (existingDoc) {
     // Parse the existing content
@@ -41,7 +46,7 @@ export default defineEventHandler(async (event) => {
     console.log(`Setting content for chapter "${chapter}"`)
     
     // Save the updated document
-    documentOperations.update.run(JSON.stringify(documentContent), existingDoc.id);
+    await documentOperations.update.run(JSON.stringify(documentContent), existingDoc.id);
     
     return {
       success: true,
@@ -51,7 +56,7 @@ export default defineEventHandler(async (event) => {
   } else {
     // Create a new document with this chapter
     const newContent = { [chapter]: content };
-    const result = documentOperations.create.run(userId, JSON.stringify(newContent));
+    const result = await documentOperations.create.run(userId, JSON.stringify(newContent));
     
     return {
       success: true,

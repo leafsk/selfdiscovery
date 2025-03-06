@@ -31,4 +31,15 @@ export default defineNuxtConfig({
       apiBaseUrl: process.env.API_BASE_URL || "/api",
     },
   },
+  // Configure for Cloudflare Pages deployment
+  nitro: {
+    preset: 'cloudflare-pages',
+    compressPublicAssets: true,
+    // Important for making D1 database binding work
+    cloudflare: {
+      routes: {
+        include: ['/**']
+      }
+    }
+  }
 });

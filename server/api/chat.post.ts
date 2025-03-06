@@ -2,6 +2,13 @@ import { Anthropic } from '@anthropic-ai/sdk';
 import { getServerSession } from '#auth';
 
 export default defineEventHandler(async (event) => {
+  // For Cloudflare D1 binding
+  if (event.context.cloudflare?.env?.DB) {
+    // Import setD1Database dynamically to avoid circular dependencies
+    const { setD1Database } = await import('~/server/utils/db');
+    setD1Database(event.context.cloudflare.env.DB);
+  }
+
   // Get user session
   const session = await getServerSession(event);
   if (!session) {

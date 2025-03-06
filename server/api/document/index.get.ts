@@ -1,7 +1,12 @@
 import { getServerSession } from '#auth';
-import { documentOperations, userOperations } from '~/server/utils/db';
+import { documentOperations, userOperations, setD1Database } from '~/server/utils/db';
 
 export default defineEventHandler(async (event) => {
+  // For Cloudflare D1 binding
+  if (event.context.cloudflare?.env?.DB) {
+    setD1Database(event.context.cloudflare.env.DB);
+  }
+
   const session = await getServerSession(event);
   if (!session) {
     throw createError({
@@ -13,13 +18,13 @@ export default defineEventHandler(async (event) => {
   const userId = session.user.id;
   
   // Ensure the user exists in our database
-  const existingUser = userOperations.findById.get(userId);
+  const existingUser = await userOperations.findById.get(userId);
   if (!existingUser) {
-    userOperations.createUser.run(userId, session.user.email, session.user.name || null);
+    await userOperations.createUser.run(userId, session.user.email, session.user.name || null);
   }
   
   // Get the user's document from the database
-  const document = documentOperations.getByUserId.get(userId);
+  const document = await documentOperations.getByUserId.get(userId);
   
   if (document) {
     let content;
@@ -40,7 +45,7 @@ export default defineEventHandler(async (event) => {
       };
       
       // Update the document with the proper JSON structure
-      documentOperations.update.run(JSON.stringify(content), document.id);
+      await documentOperations.update.run(JSON.stringify(content), document.id);
       console.log('Created default document structure');
     }
     
@@ -59,7 +64,7 @@ export default defineEventHandler(async (event) => {
     };
     
     const jsonContent = JSON.stringify(defaultContent);
-    const result = documentOperations.create.run(userId, jsonContent);
+    const result = await documentOperations.create.run(userId, jsonContent);
     
     return {
       userId,
